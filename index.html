@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAPPPPPLE</title>
+</head>
+<body>
+    <h1>Hello World</h1>
+    <p id="msg">This is sample bro</p>
+    <div>
+        <button onclick="doaction();">CLICK</button>
+        </div>
+</body>
+<script>
+    let counter = 0;
+    function doaction(){
+        let p = document.querySelector("#msg");
+        p.textContent = "count:" + ++counter;
+    }
+</script>
+</html>
