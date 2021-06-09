@@ -1,38 +1,54 @@
-const {app, BrowserWindow} = require('electron');
-
+const {app, Menu, BrowserWindow} = require('electron');
+const path = require('path');
 
 function createWindow(){
     let win = new BrowserWindow({
-        width: 400,
-        height: 200,
-        show:false,
+        width: 600,
+        height: 400,
         webPreferences: {
-            nodeIntegration: true
-        }
-    });
+            nodeIntegration: true,
+            enableRemoteModule: true,
+            contextIsolation: false
+
+    }});
 
     win.loadFile('index.html');
-
-    win.on('ready-to-show', () =>{
-        win.show();
-    })
-
-    let child = new BrowserWindow({
-        width: 350,
-        height: 200,
-        parent: win,
-        webPreferences:{
-            nodeIntegration:true
-        }
-    });
-
-    child.loadFile('sub.html');
     win.webContents.openDevTools();
 }
 
-app.whenReady().then(createWindow);
+function createMenu() {
+    let menu_temp = [
+        {label:'File',
+            submenu: [
+                {label:'New', click: () => {
+                    console.log('New menu.');
+                    createWindow();
+                }},
+                {label:'File', click: () => {
+                    console.log('File menu.');
+                    createWindow();
+                }},
+                {role: 'close'},
+                {type: 'separator'},
+                {role: 'quit'},
+            ],
+        },
+        {role: 'editMenu'},
+        {role: 'viewMenu'},
+        {role: 'windowMenu'},
+        {label: 'Help', submenu: [
+            {role: 'about'},
+            {type: 'separator'},
+            {role: 'reload'},
+            {role: 'zoomIn'},
+            {role: 'zoomOut'}
+        ]}
+    ];
 
-//Electronの起動処理が完了すると発生
-app.on('will-finish-launching', () => {
-    console.log("will-finish-launching");
-})
+    let menu = Menu.buildFromTemplate(menu_temp);
+
+    Menu.setApplicationMenu(menu);
+}
+
+createMenu();
+app.whenReady().then(createWindow);
