@@ -8,8 +8,8 @@ function createWindow(){
         webPreferences: {
             nodeIntegration: true,
             enableRemoteModule: true,
-            contextIsolation: false
-
+            contextIsolation: false, //electron ver12.x~これがないとrequireを使えない
+            preload:path.join(app.getAppPath(), 'preload.js')
     }});
 
     win.loadFile('index.html');
@@ -24,9 +24,9 @@ function createMenu() {
                     console.log('New menu.');
                     createWindow();
                 }},
-                {label:'File', click: () => {
-                    console.log('File menu.');
-                    createWindow();
+                {label:'Hello', click: (m,w) => {
+                    console.log('Hello menu.');
+                    w.webContents.executeJavaScript('hello()');
                 }},
                 {role: 'close'},
                 {type: 'separator'},
