@@ -1,19 +1,33 @@
 const {app, Menu, BrowserWindow} = require('electron');
 const path = require('path');
+const { ipcMain }= require('electron');
+
+ipcMain.handle('hello', (event,arg) => {
+    let ws = BrowserWindow.getAllWindows();
+    for (const window of ws) {
+        if(window.id != arg){
+            window.close();
+        }
+    }
+
+    return 'only open id= ' + arg;
+})
+
 
 function createWindow(){
-    let win = new BrowserWindow({
+    win = new BrowserWindow({
         width: 600,
         height: 400,
-        webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true,
-            contextIsolation: false, //electron ver12.x~これがないとrequireを使えない
-            preload:path.join(app.getAppPath(), 'preload.js')
-    }});
+        webPreferences:{
+            contextIsolation: false,
+            enableRemoteModule:true,
+            preload: path.join(app.getAppPath(), 'preload.js')
+        }
+    });
 
     win.loadFile('index.html');
     win.webContents.openDevTools();
+    return win.id;
 }
 
 function createMenu() {
@@ -23,10 +37,6 @@ function createMenu() {
                 {label:'New', click: () => {
                     console.log('New menu.');
                     createWindow();
-                }},
-                {label:'Hello', click: (m,w) => {
-                    console.log('Hello menu.');
-                    w.webContents.executeJavaScript('hello()');
                 }},
                 {role: 'close'},
                 {type: 'separator'},

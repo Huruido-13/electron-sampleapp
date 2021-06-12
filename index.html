@@ -14,60 +14,162 @@
         <h1 class="display-4 text-light">Sample-app</h1>
     </nav>
     <div class="container">
-        <p id="msg">Please click button</p>
-        <button class="btn btn-primary" onclick="doit()">
+        <p id="msg">showMessage()ボタン</p>
+        <button class="btn btn-primary" onclick="showMessage()">
             Click
         </button>
+        <p id="msg2">invokeMainprocessHandle()ボタン</p>
+        <button class="btn btn-primary" onclick="invokeMainprocessHandle()">
+            Click
+        </button>
+        <p id="msg3">readFile()ボタン</p>
+        <button class="btn btn-primary" onclick="readFile()">
+            Click
+        </button>
+        <p>
+            <textarea class="form-control" id="ta"></textarea>
+        </p>
+        <p id="msg4">writeFile()ボタン</p>
+        <button class="btn btn-primary" onclick="writeFile()">
+            Click
+        </button>
+        <p id="msg5">getJson()ボタン</p>
+        <button class="btn btn-primary" onclick="getJson()">
+            Click
+        </button>
+        <p id="msg6">JSON置き場</p>
     </div>
     <script>
-        const BrowserWindow = window.remote.BrowserWindow;
-        const Menu = window.remote.Menu;
-        const MenuItem = window.remote.MenuItem;
-        
-        let menu_temp = [
-            {
-                label:"Hello",click(m,w){
-                    console.log("Hello menu");
-                    alert("Hellllllllllo! ID:" + w.id );
+        function readFile(){
+            let w = remote.getCurrentWindow();
+            dialog.showOpenDialog(w,{
+                properties:['openFile'],
+                filters:[
+                    {name:'Text Files', extensions:['txt']},
+                    {name:'All Files', extensions:['*']}
+                ]
+            }).then((result) => {
+                if(result.canceled){
+                    re = 'canceled'
+                    document.querySelector("#ta").value = re;
                 }
-            },
-            {type:"separator"},
-            {role:"cut"},
-            {role:"copy"},
-            {role:"paste"}
-        ];
-
-        const menu = Menu.buildFromTemplate(menu_temp);
-
-        window.addEventListener("contextmenu", (e) => {
-            menu.popup({window: remote.getCurrentWindow()})
-        }, false);
-
-        function doit(){
-            let menu_temp = [
-                {
-                    label:'New Menu',
-                    submenu:[
-                        {label:'New', click:() => {
-                            console.log('New menu');
-                            createWindow();
-                        }},
-                        {label:"Hello", click:() =>{
-                            hello();
-                        }},
-                        {role: 'close'},
-                        {role: 'separetor'},
-                        {role:'quit'}
-                    ]
-                }];
-                let menu = Menu.buildFromTemplate(menu_temp);
-                Menu.setApplicationMenu(menu);
-                alert('change menubar!');
-            };
-        function hello(){
-            alert('select menu' + remote.getCurrentWindow().id);
+                else{
+                    var re ='';
+                    //FilePath
+                    let pth = result.filePaths[0];
+                    re = fs.readFile(pth,(err,result) => {
+                        if(err === null){
+                            alert("読み込みました");
+                            let data = result.toString();
+                            document.querySelector("#ta").value = data;
+                        }
+                    })
+                }
+            }).catch(err => {
+                dialog.showErrorBox(err.code,err.errno);
+            });
         }
 
+        function writeFile(){
+            let data = document.querySelector("#ta").value;
+            let w = remote.getCurrentWindow();
+
+            dialog.showSaveDialog(w,{
+                title:'保存ダイアログ',
+                message:'ファイル名を入力',
+            }).then( result => {
+                if(result.canceled){
+                    alert('キャンセルされました');
+                    return;
+                }
+                if(result.filePath !== null){
+                    //保存するファイル名、保存するデータ、エラーオブジェクト
+                    fs.writeFile(result.filePath + '.txt', data, err => {
+                        if(err === null){
+                            alert("保存しました");
+                            }
+                        else{
+                            dialog.showErrorBox(err.code,err.errno,err.message);
+                        }})
+                }
+                else{
+                    alert('キャンセルされました');
+                }
+
+
+                }
+            )
+        };
+
+        function showMessage(){
+            let btns = ["正常です","問題があります"];
+            let w = remote.getCurrentWindow();
+            
+            let re = dialog.showMessageBox(w,{
+                title:"Warning!",
+                message:"アプリケーションに問題はありますか",
+                buttons:btns,
+            }).then((event) =>{
+                //選択したボタンのインデックス番号がresponse
+                if(event.response === 1){
+                    dialog.showErrorBox('Caution','なにか問題が発生しています')
+                }
+                else{
+                    alert('了解しました');
+                }
+            });
+        };
+        
+        function invokeMainprocessHandle(){
+            let w = remote.getCurrentWindow();
+            //レンダラープロセスでinvokeするとメインプロセスのipcMain.hndleの処理が呼ばれる
+            ipcRenderer.invoke('hello',w.id).then((result) =>{
+                document.querySelector('#ta').textContent = result;
+            })
+        };
+
+        function getJson(){
+            //JSON形式のダミーデータのURL
+            let url = "https://tuyano-api.firebaseio.com/covid.json";
+            let msg = document.querySelector("#msg6");
+            window.https.get(url, (res) => {
+                let data = '';
+                res.setEncoding('utf8');
+                res.on("data",(ck) =>{
+                    data += ck;
+                });
+
+                res.on("end", (re)=>{
+                    let json_parsed = JSON.parse(data);
+                    msg.innerHTML = jsonToTable(json_parsed);
+                })
+
+            })
+
+        }
+
+        function jsonToTable(json) {
+            let table = '<table class="table"><thead><tr><th></th>';
+            for(const key in json){
+                let ob = json[key];
+                for(const key2 in ob){
+                    table += '<th>' + key2 + '</th>';
+                }
+                break;
+            }
+            table += '</tr></thead><tbody>';
+
+            for(const ky in json){
+                table += '<tr><td>' + ky + '</td>';
+                let ob = json[ky];
+                for (let ky2 in ob){
+                    table += '<td>' + ob[ky2] + '</td>';
+                }
+                table += '</tr>';
+            }
+            table += '</tbody></table>';
+            return table;
+        }
     </script>
 </body>
 </html>
