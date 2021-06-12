@@ -37,9 +37,70 @@
         <button class="btn btn-primary" onclick="getJson()">
             Click
         </button>
-        <p id="msg6">JSON置き場</p>
+        <p id="msg6">Json置き場</p>
+        <p id="msg7">getRss()ボタン</p>
+        <button class="btn btn-primary" onclick="getRss()">
+            Click
+        </button>
+        <p id="msg8">Rss置き場</p>
+        <p id="msg9">createDB()ボタン</p>
+        <button class="btn btn-primary" onclick="createDb()">
+            Click
+        </button>
+        <p id="msg10">createRecord()ボタン</p>
+        <button class="btn btn-primary" onclick="createRecord()">
+            Click
+        </button>
+        <p>
+            <textarea class="form-control" id="ta2"></textarea>
+        </p>
     </div>
     <script>
+        var dbpath = path.join(remote.app.getPath('home'), 'mydata.db');
+        function createDb(){
+            let db = new sqlite3.Database(dbpath)
+            db.serialize(() => {
+                query = 'create table if not exists users'
+                + ' (id integer primary key autoincrement,'
+                + ' name text not null, mail text, tel text)';
+                db.run(query);
+                alert('create users table');
+            })
+            db.close();
+        }
+
+        function createRecord(){
+            let ta = document.querySelector("#ta2");
+            let data = ta.value.split(',');
+            console.log(data);
+            addUser(data).then((res) =>{
+                alert(res);
+                console.log("成功");
+                ta.value = '';
+            }).catch((err) =>{
+                alert(err);
+            })
+        }
+
+        function addUser(data){
+            return new Promise((resoleve, reject) => {
+                let db = new sqlite3.Database(dbpath);
+                db.serialize(() => {
+                    let query = 'insert into users (name,mail,tel) values' + '("' + data[0] + '","' + data[1] + '","' + data[2] + '")';
+                    console.log(query);
+                    db.exec(query, (stat,err) =>{
+                        if( err === null){
+                            resolve('SUCCESS');
+                        }
+                        else{
+                            reject(err);
+                        }
+                    })
+                })
+                db.close();
+            })
+        }
+
         function readFile(){
             let w = remote.getCurrentWindow();
             dialog.showOpenDialog(w,{
@@ -132,7 +193,7 @@
             //JSON形式のダミーデータのURL
             let url = "https://tuyano-api.firebaseio.com/covid.json";
             let msg = document.querySelector("#msg6");
-            window.https.get(url, (res) => {
+            https.get(url, (res) => {
                 let data = '';
                 res.setEncoding('utf8');
                 res.on("data",(ck) =>{
@@ -169,6 +230,27 @@
             }
             table += '</tbody></table>';
             return table;
+        }
+
+        function getRss(){
+
+            let url = 'https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja';
+            let msg = document.querySelector("#msg8");
+            let parser = new Parser();
+            let list = '<ul class="list-group">';
+            parser.parseURL(url, (err,feed) =>{
+                if(err === null){
+                    for(let n in feed.items){
+                        let feedItem = feed.items[n];
+                        list += '<li class="list-group-item">' + feedItem.title + '(' + feedItem.pubDate + ')' + '</li>';
+                    }
+                    list += '</ul>';
+                    msg.innerHTML = list;
+                }
+                else{
+                    alert("ERROR!");
+                }
+            })
         }
     </script>
 </body>
