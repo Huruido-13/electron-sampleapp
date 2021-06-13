@@ -14,6 +14,7 @@
         <h1 class="display-4 text-light">Sample-app</h1>
     </nav>
     <div class="container">
+        <p id="db">createRecord()ボタン</p>
         <p id="msg">showMessage()ボタン</p>
         <button class="btn btn-primary" onclick="showMessage()">
             Click
@@ -54,9 +55,56 @@
         <p>
             <textarea class="form-control" id="ta2"></textarea>
         </p>
+        <p id="msg11">DataBase置き場</p>
+        <button class="btn btn-primary" onclick="findUsers()">
+            Click
+        </button>
     </div>
     <script>
         var dbpath = path.join(remote.app.getPath('home'), 'mydata.db');
+        maketable();
+
+        function findUsers(){
+            let fstr = " where ";
+            fstr += document.querySelector("#ta2").value;
+            console.log(fstr);
+            findall(fstr).then((res) => {
+                let msg = document.querySelector("#msg11");
+                msg.innerHTML = jsonToTable(res);
+            })
+        }
+
+        function maketable(){
+            findall().then((res) =>{
+                let msg = document.querySelector("#db");
+                msg.innerHTML = jsonToTable(res);
+            })
+        }
+
+        function findall(fstr = 1){
+            if(fstr !== 1){
+                var query = 'select * from users' + fstr;
+            }
+            else{
+                var query = 'select * from users';
+            }
+            console.log(query);
+            return new Promise((resolve, reject) =>{
+                let db = new sqlite3.Database(dbpath);
+                db.all(query, (err,rows) => {
+                    if( err === null) {
+                        resolve(rows)
+                    }
+                    else{
+                        reject(err);
+                    }
+                });
+                db.close();
+            }).catch((err) =>{
+                alert(err.message);
+            })
+        }
+
         function createDb(){
             let db = new sqlite3.Database(dbpath)
             db.serialize(() => {
@@ -86,7 +134,7 @@
             return new Promise((resoleve, reject) => {
                 let db = new sqlite3.Database(dbpath);
                 db.serialize(() => {
-                    let query = 'insert into users (name,mail,tel) values' + '("' + data[0] + '","' + data[1] + '","' + data[2] + '")';
+                    let query = 'insert into users (name,mail,tel) values' + '("' + data[0] + '","' + data[1] + '","' + data[2] + '") ';
                     console.log(query);
                     db.exec(query, (stat,err) =>{
                         if( err === null){
